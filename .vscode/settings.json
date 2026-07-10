@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "*.sv": "systemverilog",
+        "*.svh": "systemverilog"
+    },
+    "verilog.linting.linter": "verilator",
+    "verilog.linting.runOnOpen": true,
+    "verilog.linting.runOnSave": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true
+}

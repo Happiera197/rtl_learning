@@ -1,0 +1,16 @@
+# Verilator generated directories
+obj_dir/
+build/
+
+# Waveform files
+*.fst
+*.vcd
+
+# Coverage and logs
+coverage.dat
+coverage/
+*.log
+
+# Temporary files
+*.tmp
+*~
