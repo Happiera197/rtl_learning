@@ -14,3 +14,22 @@ coverage/
 # Temporary files
 *.tmp
 *~
+
+# Verilator generated directories
+obj_dir/
+build/
+
+# Waveform files
+*.vcd
+*.fst
+
+# Simulation and log files
+*.log
+
+# Compiled objects
+*.o
+*.a
+
+# Editor temporary files
+*.swp
+*~
