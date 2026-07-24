@@ -21,6 +21,10 @@ localparam logic [3:0] OP_SHL  = 4'h7;
 localparam logic [3:0] OP_SHR  = 4'h8;
 
 logic [WIDTH:0] EX_result;
+
+ timeunit 1ns;
+    timeprecision 1ps;
+
 always_comb begin
     carry           = 1'b0;
     overflow        = 1'b0;
