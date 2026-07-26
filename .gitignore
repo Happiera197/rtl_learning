@@ -33,3 +33,13 @@ build/
 # Editor temporary files
 *.swp
 *~
+
+# Verilator build products
+obj_dir/
+obj_dir_*/
+*.vcd
+*.fst
+*.log
+core
+core.*
+week3_counter_tb/obj_dir/
