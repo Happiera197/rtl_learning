@@ -1,43 +1,87 @@
 VERILATOR ?= verilator
 
-VFLAGS := --binary --timing --trace --assert -Wall -Wno-fatal
+COMMON_FLAGS := --assert -Wall -Wno-fatal
+LINT_FLAGS   := --lint-only --timing $(COMMON_FLAGS)
+SIM_FLAGS    := --binary --timing --trace $(COMMON_FLAGS)
 
-.PHONY: all lint sim sim_fifo sim_rv wave_fifo wave_rv clean
+FIFO_TOP  := tb_sync_fifo
+FIFO_RTL  := rtl/sync_fifo.sv
+FIFO_TB   := tb/tb_sync_fifo.sv
+FIFO_MDIR := obj_dir_fifo
+FIFO_VCD  := sync_fifo.vcd
+
+RV_TOP  := tb_rv_buffer_1entry
+RV_RTL  := rtl/rv_buffer_1entry.sv
+RV_TB   := tb/tb_rv_buffer_1entry.sv
+RV_MDIR := obj_dir_rv
+RV_VCD  := rv_buffer_1entry.vcd
+
+.PHONY: all lint lint_fifo lint_rv \
+        sim sim_fifo sim_rv \
+        wave_fifo wave_rv clean
 
 all: lint sim
 
-lint:
-	verilator --lint-only --assert -Wall -Wno-fatal \
-		--top-module sync_fifo \
-		rtl/sync_fifo.sv
 
-	verilator --lint-only --assert -Wall -Wno-fatal \
-		--top-module rv_buffer_1entry \
-		rtl/rv_buffer_1entry.sv
+# ============================================================
+# Lint
+# ============================================================
+
+lint: lint_fifo lint_rv
+
+lint_fifo:
+	$(VERILATOR) $(LINT_FLAGS) \
+		--top-module $(FIFO_TOP) \
+		$(FIFO_RTL) \
+		$(FIFO_TB)
+
+lint_rv:
+	$(VERILATOR) $(LINT_FLAGS) \
+		--top-module $(RV_TOP) \
+		$(RV_RTL) \
+		$(RV_TB)
+
+
+# ============================================================
+# Simulation
+# ============================================================
+
 sim: sim_fifo sim_rv
 
 sim_fifo:
-	rm -rf obj_dir_fifo sync_fifo.vcd
-	$(VERILATOR) $(VFLAGS) \
-		--Mdir obj_dir_fifo \
-		--top-module tb_sync_fifo \
-		rtl/sync_fifo.sv tb/tb_sync_fifo.sv
-	./obj_dir_fifo/Vtb_sync_fifo
+	rm -rf $(FIFO_MDIR) $(FIFO_VCD)
+	$(VERILATOR) $(SIM_FLAGS) \
+		--Mdir $(FIFO_MDIR) \
+		--top-module $(FIFO_TOP) \
+		$(FIFO_RTL) \
+		$(FIFO_TB)
+	./$(FIFO_MDIR)/V$(FIFO_TOP)
 
 sim_rv:
-	rm -rf obj_dir_rv rv_buffer_1entry.vcd
-	$(VERILATOR) $(VFLAGS) \
-		--Mdir obj_dir_rv \
-		--top-module tb_rv_buffer_1entry \
-		rtl/rv_buffer_1entry.sv tb/tb_rv_buffer_1entry.sv
-	./obj_dir_rv/Vtb_rv_buffer_1entry
+	rm -rf $(RV_MDIR) $(RV_VCD)
+	$(VERILATOR) $(SIM_FLAGS) \
+		--Mdir $(RV_MDIR) \
+		--top-module $(RV_TOP) \
+		$(RV_RTL) \
+		$(RV_TB)
+	./$(RV_MDIR)/V$(RV_TOP)
+
+
+# ============================================================
+# Waveform
+# ============================================================
 
 wave_fifo:
-	gtkwave sync_fifo.vcd
+	gtkwave $(FIFO_VCD)
 
 wave_rv:
-	gtkwave rv_buffer_1entry.vcd
+	gtkwave $(RV_VCD)
+
+
+# ============================================================
+# Clean
+# ============================================================
 
 clean:
-	rm -rf obj_dir obj_dir_fifo obj_dir_rv \
-		sync_fifo.vcd rv_buffer_1entry.vcd
+	rm -rf obj_dir $(FIFO_MDIR) $(RV_MDIR) \
+		$(FIFO_VCD) $(RV_VCD)
