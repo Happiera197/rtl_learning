@@ -42,7 +42,7 @@ logic [WIDTH-1:0]ref_q[$];
 
 int unsigned error_count=0;
 int unsigned check_count=0;
-
+string test_name;
 task automatic report_error(
         input string test_name,
         input string message
@@ -314,9 +314,23 @@ endtask
     endtask
 
     initial begin
+    resetn = 1'b1;
+    wr_en  = 1'b0;
+    rd_en  = 1'b0;
+    wr_data = '0;
+
     error_count = 0;
     check_count = 0;
 
+    if ($test$plusargs("TRACE")) begin
+        $dumpfile("sync_fifo.fst");
+        $dumpvars(0, tb_sync_fifo);
+    end
+
+    if (!$value$plusargs("TEST=%s", test_name))
+        test_name = "basic";
+    //新增内容
+    /*
     test_reset();
     test_empty_read();
     test_full_write();
@@ -326,7 +340,43 @@ endtask
     test_mid_reset();
 
     random_test(10000);
+*/
+//修改为选择测试
+case (test_name)
 
+        "basic": begin
+            test_consecutive_rw();
+            test_wraparound();
+        end
+
+        "reset": begin
+            test_reset();
+            test_mid_reset();
+        end
+
+        "full_empty": begin
+            test_empty_read();
+            test_full_write();
+        end
+
+        "simultaneous_rw": begin
+            test_simultaneous_rw();
+        end
+
+        "random": begin
+            random_test(10000);
+        end
+
+        default: begin
+            $fatal(
+                1,
+                "Unknown TEST=%s",
+                test_name
+            );
+        end
+
+    endcase
+/*
     $display("==============================");
     $display("FIFO Verification Summary");
     $display("Checks : %0d", check_count);
@@ -340,5 +390,32 @@ endtask
     $display("==============================");
 
     $finish;
+    */
+    $display("");
+    $display("========================================");
+    $display("FIFO Verification Summary");
+    $display("Test   : %s", test_name);
+    $display("Checks : %0d", check_count);
+    $display("Errors : %0d", error_count);
+
+    if (error_count == 0) begin
+        $display("RESULT : PASS");
+        $display("========================================");
+    end
+    else begin
+        $display("RESULT : FAIL");
+        $display("========================================");
+
+        $fatal(
+            1,
+            "Test %s failed with %0d errors",
+            test_name,
+            error_count
+        );
+    end
+
+    #10;
+    $finish;
 end
+
 endmodule
