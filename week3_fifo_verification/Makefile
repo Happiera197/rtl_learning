@@ -1,8 +1,8 @@
 VERILATOR ?= verilator
 
-TOP  := tb_sync_fifo
-RTL  := rtl/sync_fifo.sv
-TB   := tb/tb_sync_fifo.sv
+TOP := tb_sync_fifo
+RTL := rtl/sync_fifo.sv
+TB  := tb/tb_sync_fifo.sv
 
 MDIR := obj_dir_fifo
 BIN  := $(MDIR)/V$(TOP)
@@ -17,8 +17,29 @@ VFLAGS := --binary --timing --trace-fst --assert -Wall -Wno-fatal
 LFLAGS := --lint-only --timing --assert -Wall -Wno-fatal
 
 
-.PHONY: all lint build sim wave regress clean
+# ============================================================
+# Coverage configuration
+# ============================================================
 
+COV_MDIR := obj_dir_cov
+COV_BIN  := $(COV_MDIR)/V$(TOP)
+
+COV_DIR      := coverage
+COV_DATA_DIR := $(COV_DIR)/data
+COV_ANN_DIR  := $(COV_DIR)/annotated
+COV_MERGED   := $(COV_DIR)/coverage_merged.dat
+
+COV_FLAGS := --binary --timing --assert -Wall -Wno-fatal \
+	     --coverage-line --coverage-toggle
+
+
+.PHONY: all lint build sim wave regress clean
+.PHONY: coverage coverage_build coverage_run coverage_report
+
+
+# ============================================================
+# Normal verification flow
+# ============================================================
 
 all: regress
 
@@ -79,8 +100,67 @@ regress: lint build
 	echo "========================================"
 
 
+# ============================================================
+# Coverage flow
+# ============================================================
+
+coverage_build:
+	rm -rf $(COV_MDIR)
+	$(VERILATOR) $(COV_FLAGS) \
+		--Mdir $(COV_MDIR) \
+		--top-module $(TOP) \
+		$(RTL) $(TB)
+
+
+coverage_run: coverage_build
+	rm -rf $(COV_DIR)
+	mkdir -p $(COV_DATA_DIR)
+	mkdir -p $(LOG_DIR)
+
+	@set -e; \
+	for t in $(TESTS); do \
+		echo "========================================"; \
+		echo "Coverage test: $$t"; \
+		echo "========================================"; \
+		./$(COV_BIN) \
+			+TEST=$$t \
+			+verilator+coverage+file+$(COV_DATA_DIR)/$$t.dat \
+			> $(LOG_DIR)/coverage_$$t.log 2>&1; \
+		cat $(LOG_DIR)/coverage_$$t.log; \
+	done
+
+	verilator_coverage \
+		--write $(COV_MERGED) \
+		$(COV_DATA_DIR)/*.dat
+
+
+coverage_report: coverage_run
+	verilator_coverage \
+		--report summary \
+		$(COV_MERGED) \
+		| tee $(COV_DIR)/summary.txt
+
+	rm -rf $(COV_ANN_DIR)
+
+	verilator_coverage \
+		--annotate $(COV_ANN_DIR) \
+		--annotate-points \
+		--annotate-min 1 \
+		$(COV_MERGED)
+
+
+coverage: coverage_report
+
+
+# ============================================================
+# Clean
+# ============================================================
+
 clean:
-	rm -rf $(MDIR) obj_dir \
+	rm -rf $(MDIR) \
+		$(COV_MDIR) \
+		obj_dir \
 		$(LOG_DIR) \
+		$(COV_DIR) \
 		*.fst *.vcd *.log \
-		coverage.dat coverage_report
+		coverage.dat

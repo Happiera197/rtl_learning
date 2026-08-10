@@ -64,6 +64,57 @@ Passed : 5
 Failed : 0
 RESULT : PASS
 ========================================
+```
+
+## Coverage 验证
+
+在功能回归测试基础上，项目进一步使用 Verilator Coverage 分析测试是否充分覆盖 RTL。
+
+当前启用：
+
+- Line Coverage：检查 RTL 代码是否被执行
+- Toggle Coverage：检查信号 bit 是否发生有效翻转
+
+Coverage 使用独立的 Verilator build，并对全部 testcase 重新运行：
+
+```bash
+make coverage
+```
+
+每个 testcase 会分别生成 Coverage 数据：
+
+```text
+coverage/data/basic.dat
+coverage/data/reset.dat
+coverage/data/full_empty.dat
+coverage/data/simultaneous_rw.dat
+coverage/data/random.dat
+```
+
+随后使用 `verilator_coverage` 合并为完整 Regression Coverage，并生成 summary 与 annotated source。
+
+当前实际 Coverage 结果：
+
+```text
+Coverage Summary:
+  line      : 100.0% (45/45)
+  toggle    : 100.0% (384/384)
+  branch    : 75.0%  (33/44)
+  expr      : 0.0%   (0/0)
+  fsm_state : 0.0%   (0/0)
+  fsm_arc   : 0.0%   (0/0)
+```
+
+其中本项目重点关注的 **Line Coverage 与 Toggle Coverage 均达到 100%**。
+
+进一步检查 annotated source 后，未覆盖的 branch 均出现在 testbench 中，没有发现 DUT `sync_fifo.sv` 中的未覆盖 Coverage Point。这些未覆盖项主要来自 checker 的错误处理、FAIL 分支等测试基础设施路径，因此不通过故意制造错误来追求无意义的 100% 总覆盖率。
+
+Coverage 在本项目中的作用是发现测试遗漏，而不是判断 RTL 功能是否正确：
+
+- Self-checking Testbench / Reference Model：判断结果是否正确
+- Coverage：判断 RTL 是否得到了充分测试
+
+因此，本项目采用“有意义的测试场景驱动 Coverage”的方式，而不是单纯延长随机仿真时间来提高覆盖率。
 
 ## 项目结构
 
@@ -122,6 +173,35 @@ make sim
 make regress
 ```
 
+运行 Coverage Regression：
+
+```bash
+make coverage
+```
+
+运行后会自动完成：
+
+```text
+Coverage Build
+    ↓
+运行全部 Testcase
+    ↓
+生成各测试 Coverage 数据
+    ↓
+合并 Coverage
+    ↓
+生成 Coverage Summary
+    ↓
+生成 Annotated Source
+```
+
+主要结果位于：
+
+```text
+coverage/summary.txt
+coverage/annotated/
+```
+
 查看指定测试的波形：
 
 ```bash
@@ -147,3 +227,10 @@ make clean
 * 使用随机测试进行较长周期的回归验证
 * 使用 Verilator 完成 lint、编译和自动仿真
 * 使用 Makefile 管理 build、单测试运行、波形查看和 Regression 流程
+* 理解 **功能正确性与 Code Coverage 的区别**
+* 学会使用 Verilator 的 **Line Coverage 与 Toggle Coverage**
+* 理解 Line Coverage 用于观察代码是否执行，Toggle Coverage 用于观察信号 bit 是否得到有效激励
+* 学会为不同 testcase 分别收集 Coverage，并合并得到 Regression Coverage
+* 学会通过 annotated source 定位未覆盖的代码路径和 Coverage Point
+* 理解 Coverage 的目标不是机械追求 100%，而是发现真正的 Verification Hole
+* 理解覆盖率提升应来自有意义的 Directed Test，而不是单纯延长随机测试时间
