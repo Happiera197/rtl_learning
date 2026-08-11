@@ -1,67 +1,60 @@
-# Synchronous FIFO Verification
+# FIFO Class-Based Verification
 
-一个基于 **SystemVerilog + Verilator** 的同步 FIFO 自检验证项目。
+一个基于 **SystemVerilog + Verilator** 的同步 FIFO Class-Based 验证项目。
 
-项目通过 SystemVerilog `queue` 构建 Reference Model，自动比较 DUT 的数据和状态，并使用定向测试与随机测试验证 FIFO 的主要功能。
+## 验证架构
+
+```text
+Generator → Driver → DUT → Monitor → Scoreboard
+```
+
+- **Transaction**：描述一次 FIFO 读写操作
+- **Generator**：随机生成 transaction
+- **Driver**：通过 virtual interface 驱动 DUT
+- **Monitor**：采集 DUT 接口信号
+- **Scoreboard**：比较 DUT 行为与参考结果
+- **Mailbox / Event**：实现各验证组件之间的通信与同步
 
 ## 项目功能
 
-- 使用 `queue` 构建 FIFO Reference Model
-- 自动检查 `count`、`empty`、`full`
-- 自动比较 FIFO 读出数据
-- 验证 Reset、Full、Empty、同时读写等场景
-- 使用 `fifo_transaction` 类描述 FIFO transaction
-- 根据 FIFO 当前状态调整随机读写概率
-- 主动覆盖 Full、Empty、同时读写和指针回绕
-- 使用固定 Seed 实现可复现随机测试
-- 使用 Makefile 管理 lint、单测试和 regression
-- 自动输出 `PASS / FAIL`
+- 使用 SystemVerilog class 搭建验证环境
+- 使用 `randomize()` 产生随机激励
+- 使用参数化 `mailbox` 传递 transaction
+- 使用 `event` 同步 Generator 与 Driver
+- 使用 `virtual interface` 连接 class 与 DUT
+- Monitor 自动采集 FIFO 运行状态
+- Scoreboard 自动进行结果检查
+- 支持 Verilator lint 与仿真
 
-随机测试示例结果：
+## 仿真结果
+
+仿真时 Generator 产生随机 transaction，经 Driver 驱动 FIFO，Monitor 采集实际行为并发送给 Scoreboard 检查。
+
+示例输出：
 
 ```text
+[GEN] write=1 read=0 data=0x35
+[DRV] write=1 read=0 data=0x35
+[MON] write=1 read=0 data=0x35
+[SCB] PASS
+
+========================================
 FIFO Verification Summary
-Test   : random
-Checks : 35607
-Errors : 0
-RESULT : PASS
+Transactions : 100
+Errors       : 0
+RESULT       : PASS
+========================================
 ```
 
-## 项目结构
-
-```text
-week4_fifo_verification/
-├── rtl/
-│   └── sync_fifo.sv
-├── tb/
-│   ├── fifo_transaction.sv
-│   ├── tb_sync_fifo.sv
-│   └── tb_transaction.sv
-├── Makefile
-└── README.md
-```
-
-## 常用命令
-
-```bash
-make lint
-make basic
-make reset
-make full_empty
-make simultaneous_rw
-make random SEED=12345
-make regression
-make clean
-```
+> 上述为 README 展示格式，最终结果以实际仿真输出为准。
 
 ## 学习收获
 
-- SystemVerilog `class`、object 和 transaction 的基本使用
-- 使用 Reference Model 搭建 self-checking testbench
-- Directed Test 与 Random Test 的区别和配合方式
-- 使用 `$urandom_range` 生成随机 stimulus
-- 根据 DUT 状态设计更有目的性的随机测试
-- 使用 Seed 复现随机测试中发现的问题
-- 理解 Full、Empty、同时读写和 pointer wraparound 等 FIFO 边界场景
-- 使用 Verilator 和 Makefile 搭建完整的 lint、simulation 和 regression 流程
-
+- class 与 object 的使用
+- transaction 的设计方法
+- Generator / Driver / Monitor / Scoreboard 的职责划分
+- mailbox 的生产者—消费者通信方式
+- event 的同步机制
+- interface 与 virtual interface 的作用
+- 随机测试和 self-checking verification 的基本思想
+- 使用 Verilator 对 SystemVerilog 验证代码进行 lint 和仿真

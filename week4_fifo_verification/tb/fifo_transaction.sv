@@ -1,7 +1,11 @@
 class fifo_transaction;
-bit write;
-bit read;
-logic [7:0]data;
+rand bit write;
+rand bit read;
+rand logic [7:0]data;
+logic [7:0] rdata;
+bit         empty;
+bit         full;
+int unsigned count;
 
 function new(
     bit write=0,
@@ -18,11 +22,16 @@ function void display(
     input string prefix = "FIFO_TRANSACTION"
 );
     $display(
-            "[%s] write=%0d read=%0d data=0x%02h",
-            prefix,
-            write,
-            read,
-            data);
+    "[%s] wr=%0b rd=%0b din=0x%02h dout=0x%02h empty=%0b full=%0b count=%0d",
+    prefix,
+    write,
+    read,
+    data,
+    rdata,
+    empty,
+    full,
+    count
+);
 endfunction
 
 function fifo_transaction copy();
@@ -31,6 +40,10 @@ function fifo_transaction copy();
     tmp.write=this.write;
     tmp.read  = this.read;
     tmp.data  = this.data;
+    tmp.rdata  = this.rdata;
+    tmp.empty = this.empty;
+    tmp.full  = this.full;
+    tmp.count = this.count;
 
     return tmp;
 endfunction
@@ -38,8 +51,13 @@ endfunction
 function bit compare(fifo_transaction rhs);
     if(rhs==null) return 0;
     return(
-        (write==rhs.write)&&(read==rhs.read)&&(data==rhs.data)
-    );
+    (write == rhs.write) &&
+    (read  == rhs.read ) &&
+    (data  == rhs.data ) &&
+    (rdata  == rhs.rdata ) &&
+    (empty == rhs.empty) &&
+    (full  == rhs.full ) &&
+    (count == rhs.count));
 endfunction
 
 function void legalize(
@@ -50,7 +68,7 @@ function void legalize(
     if(level==0) read=1'b0;
     if((level>=depth)&&!read)write=1'b0;
 endfunction
-
+/*
 function void randomize_fallback(
         input int unsigned level,
         input int unsigned depth
@@ -106,7 +124,7 @@ function void randomize_fallback(
             level,
             depth
         );
-endfunction
+endfunction*/
 
 function void force_write();
 
@@ -131,4 +149,22 @@ function void force_rw();
         data  = 8'($urandom_range(255, 0));
 
     endfunction
+
+    constraint operation_c {
+
+        {write, read} dist {
+            2'b10 := 30,
+            2'b01 := 30,
+            2'b11 := 30,
+            2'b00 := 10
+        };
+
+    }
+    constraint data_c {
+
+        if (!write)
+            data == '0;
+
+    }
+
 endclass
