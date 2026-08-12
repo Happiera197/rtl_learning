@@ -5,6 +5,7 @@
 `include "fifo_driver.sv"
 `include "fifo_monitor.sv"
 `include "fifo_scoreboard.sv"
+`include "fifo_coverage.sv"
 
 module tb_sync_fifo;
 
@@ -67,6 +68,7 @@ mailbox #(fifo_transaction) mon2scb;
     fifo_driver     drv;
     fifo_monitor    mon;
     fifo_scoreboard scb;
+    fifo_coverage   cov;
 
 initial begin
     gen2drv = new();
@@ -88,6 +90,10 @@ initial begin
         scb = new(
             mon2scb
         );
+        cov = new(
+            vif,
+            DATA_DEPTH
+        );
 
         vif.resetn = 1'b0;
         vif.wren   = 1'b0;
@@ -103,6 +109,7 @@ initial begin
             drv.run();
             mon.run();
             scb.run();
+            cov.run();
         join_any
     repeat (2)
             @(posedge clk);

@@ -1,4 +1,5 @@
 VERILATOR ?= verilator
+VERILATOR_COVERAGE ?= verilator_coverage
 
 TOP = tb_sync_fifo
 
@@ -13,12 +14,13 @@ VFLAGS = \
 	--timing \
 	--trace \
 	--assert \
+	--coverage-user \
 	-Wall \
 	-Wno-fatal \
 	-Itb
 
 
-.PHONY: all lint sim wave clean
+.PHONY: all lint sim coverage wave clean
 
 
 all: lint sim
@@ -29,6 +31,7 @@ lint:
 		--lint-only \
 		--timing \
 		--assert \
+		--coverage-user \
 		-Wall \
 		-Wno-fatal \
 		-Itb \
@@ -49,6 +52,10 @@ sim:
 	./obj_dir_fifo/V$(TOP)
 
 
+coverage: sim
+	$(VERILATOR_COVERAGE) --report summary,hier coverage.dat
+
+
 wave:
 	gtkwave fifo.vcd
 
@@ -56,4 +63,5 @@ wave:
 clean:
 	rm -rf obj_dir_fifo
 	rm -f fifo.vcd
+	rm -f coverage.dat
 	rm -f *.log

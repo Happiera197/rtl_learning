@@ -26,6 +26,21 @@ Generator → Driver → DUT → Monitor → Scoreboard
 - Scoreboard 自动进行结果检查
 - 支持 Verilator lint 与仿真
 
+## Functional Coverage
+
+Coverage 组件通过 virtual interface 被动采样，不影响原有验证数据流，覆盖：
+
+- occupancy：empty / mid / full
+- operation：idle / write / read / both
+- full 时 write、empty 时 read、reset-in-flight
+- occupancy × operation cross coverage
+
+使用 Verilator 5.050 或更新版本运行：
+
+```bash
+make coverage
+```
+
 ## 仿真结果
 
 仿真时 Generator 产生随机 transaction，经 Driver 驱动 FIFO，Monitor 采集实际行为并发送给 Scoreboard 检查。
@@ -58,3 +73,4 @@ RESULT       : PASS
 - interface 与 virtual interface 的作用
 - 随机测试和 self-checking verification 的基本思想
 - 使用 Verilator 对 SystemVerilog 验证代码进行 lint 和仿真
+- 使用 covergroup、coverpoint、bins 和 cross 实现 Functional Coverage
