@@ -7,7 +7,7 @@
 项目结构：
 
 ```text
-week05_counter_assertion/
+week5_counter_assertion/
 ├── rtl/counter.sv
 ├── tb/tb_counter.sv
 ├── Makefile
